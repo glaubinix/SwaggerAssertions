@@ -272,12 +272,17 @@ class SchemaManager
      */
     public function getRequestSchema(string $path, string $method, string $mediaType): stdClass
     {
-        $requestBody = $this->getPath([
+        $segments = [
             'paths',
             $path,
             $method,
             'requestBody',
-        ]);
+        ];
+        if (!$this->hasPath($segments)) {
+            return new \stdClass();
+        }
+
+        $requestBody = $this->getPath($segments);
 
         return $requestBody->content->$mediaType->schema;
     }
