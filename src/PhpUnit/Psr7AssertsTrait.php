@@ -26,17 +26,17 @@ trait Psr7AssertsTrait
         SchemaManager $schemaManager,
         string $path,
         string $httpMethod,
+        int $httpStatusCode,
         string $message = ''
     ) {
-        if (!empty((string) $response->getBody())) {
-            $this->assertResponseMediaTypeMatch(
-                $response->getHeaderLine('Content-Type'),
-                $schemaManager,
-                $path,
-                $httpMethod,
-                $message
-            );
-        }
+        if (!empty((string) $response->getBody())) {$responseMediaType =
+            $response->getHeaderLine('Content-Type');
+$this->assertResponseMediaTypeMatch(
+            $responseMediaType,            $schemaManager,
+            $path,
+            $httpMethod,$httpStatusCode,
+            $message
+        );}
 
         $httpCode = $response->getStatusCode();
         $headers = $this->inlineHeaders($response->getHeaders());
@@ -56,6 +56,7 @@ trait Psr7AssertsTrait
             $path,
             $httpMethod,
             $httpCode,
+            $responseMediaType,
             $message
         );
     }
@@ -69,7 +70,7 @@ trait Psr7AssertsTrait
         string $message = ''
     ) {
         $path = $request->getUri()->getPath();
-        $httpMethod = $request->getMethod();
+        $httpMethod = strtolower($request->getMethod());
 
         $headers = $this->inlineHeaders($request->getHeaders());
 
@@ -84,9 +85,11 @@ trait Psr7AssertsTrait
             $message
         );
 
+        $requestMediaType = $request->getHeaderLine('Content-Type');
+
         if (!empty((string) $request->getBody())) {
             $this->assertRequestMediaTypeMatch(
-                $request->getHeaderLine('Content-Type'),
+                $requestMediaType,
                 $schemaManager,
                 $path,
                 $httpMethod,
@@ -107,6 +110,7 @@ trait Psr7AssertsTrait
             $schemaManager,
             $path,
             $httpMethod,
+            $requestMediaType,
             $message
         );
     }
@@ -120,17 +124,18 @@ trait Psr7AssertsTrait
         SchemaManager $schemaManager,
         string $message = ''
     ) {
+        $statusCode = $response->getStatusCode();
+
         try {
             $this->assertRequestMatch($request, $schemaManager, $message);
         } catch (ExpectationFailedException $e) {
             // If response represent a Client error then ignore.
-            $statusCode = $response->getStatusCode();
             if ($statusCode < 400 || $statusCode > 499) {
                 throw $e;
             }
         }
 
-        $this->assertResponseMatch($response, $schemaManager, $request->getUri()->getPath(), $request->getMethod(), $message);
+        $this->assertResponseMatch($response, $schemaManager, $request->getUri()->getPath(), strtolower($request->getMethod()), $statusCode, $message);
     }
 
     /**
